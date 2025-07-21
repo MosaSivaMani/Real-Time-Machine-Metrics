@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Real-Time Machine Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-primary: #f0f4f8;
+      --bg-secondary: #ffffff;
+      --text-primary: #1a202c;
+      --text-secondary: #4b5563;
+      --grid-color: #e5e7eb;
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      --card-hover: 0 8px 30px rgba(0, 0, 0, 0.15);
+      --status-bg: linear-gradient(90deg, #34d399, #10b981);
+      --status-error: linear-gradient(90deg, #f87171, #dc2626);
+      --tooltip-bg: #1a202c;
+    }
+
+    [data-theme="dark"] {
+      --bg-primary: #1a202c;
+      --bg-secondary: #2d3748;
+      --text-primary: #e2e8f0;
+      --text-secondary: #a0aec0;
+      --grid-color: #4a5568;
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      --card-hover: 0 8px 30px rgba(0, 0, 0, 0.4);
+      --status-bg: linear-gradient(90deg, #34d399, #10b981);
+      --status-error: linear-gradient(90deg, #f87171, #dc2626);
+      --tooltip-bg: #4a5568;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-primary);
+      margin: 0;
+      padding: 40px 20px;
+      color: var(--text-primary);
+      min-height: 100vh;
+      transition: all 0.3s ease;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 40px;
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: var(--bg-secondary);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 24px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--card-hover);
+    }
+
+    canvas {
+      width: 100% !important;
+      height: 300px !important;
+    }
+
+    .metrics {
+      margin-top: 15px;
+      font-size: 14px;
+      color: var(--text-secondary);
+      text-align: center;
+    }
+
+    .metrics span {
+      display: inline-block;
+      margin: 0 10px;
+      padding: 5px 10px;
+      border-radius: 6px;
+      background: var(--bg-primary);
+    }
+
+    .status-container {
+      text-align: center;
+      margin-top: 30px;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      font-weight: 600;
+      border-radius: 50px;
+      font-size: 16px;
+      transition: all 0.3s ease;
+    }
+
+    .connected {
+      background: var(--status-bg);
+      color: #fff;
+      animation: pulse 2s infinite;
+    }
+
+    .error {
+      background: var(--status-error);
+      color: #fff;
+    }
+
+    .theme-toggle-container {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .theme-toggle {
+      display: flex;
+      align-items: center;
+    }
+
+    .theme-toggle input {
+      display: none;
+    }
+
+    .theme-toggle-label {
+      position: relative;
+      width: 60px;
+      height: 30px;
+      background: var(--text-secondary);
+      border-radius: 15px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .theme-toggle-label::after {
+      content: '🌞';
+      position: absolute;
+      width: 26px;
+      height: 26px;
+      background: #fff;
+      border-radius: 50%;
+      top: 2px;
+      left: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      transition: transform 0.3s ease, background 0.3s ease;
+    }
+
+    .theme-toggle input:checked + .theme-toggle-label {
+      background: #10b981;
+    }
+
+    .theme-toggle input:checked + .theme-toggle-label::after {
+      content: '🌙';
+      transform: translateX(30px);
+      background: #e2e8f0;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    @media (max-width: 600px) {
+      h2 {
+        font-size: 24px;
+      }
+
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .card {
+        padding: 16px;
+      }
+
+      canvas {
+        height: 250px !important;
+      }
+
+      .theme-toggle-container {
+        top: 10px;
+        left: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="theme-toggle-container">
+    <div class="theme-toggle">
+      <input type="checkbox" id="themeToggle" />
+      <label for="themeToggle" class="theme-toggle-label"></label>
+    </div>
+  </div>
+
+  <h2>📊 Real-Time Machine Metrics</h2>
+
+  <div class="dashboard-grid">
+    <div class="card">
+      <canvas id="temperatureChart"></canvas>
+      <div class="metrics">
+        <span id="tempMin">Min: -- °C</span>
+        <span id="tempMax">Max: -- °C</span>
+      </div>
+    </div>
+    <div class="card">
+      <canvas id="pressureChart"></canvas>
+      <div class="metrics">
+        <span id="pressureMin">Min: -- bar</span>
+        <span id="pressureMax">Max: -- bar</span>
+      </div>
+    </div>
+    <div class="card">
+      <canvas id="vibrationChart"></canvas>
+      <div class="metrics">
+        <span id="vibrationMin">Min: -- g</span>
+        <span id="vibrationMax">Max: -- g</span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Humidity</h3>
+      <div class="metrics">
+        <span id="humidityValue">-- %</span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Voltage</h3>
+      <div class="metrics">
+        <span id="voltageValue">-- V</span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Current</h3>
+      <div class="metrics">
+        <span id="currentValue">-- A</span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Status</h3>
+      <div class="metrics">
+        <span id="statusValue">--</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="status-container">
+    <span id="status" class="status">Connecting to WebSocket...</span>
+  </div>
+
+  <script>
+    const MAX_POINTS = 20;
+    const labels = [], tempData = [], pressureData = [], vibrationData = [];
+    let tempMin = Infinity, tempMax = -Infinity;
+    let pressureMin = Infinity, pressureMax = -Infinity;
+    let vibrationMin = Infinity, vibrationMax = -Infinity;
+    let isConnected = false;
+
+    // --- WebSocket token ---
+    const WS_TOKEN = "mysecrettoken123";
+    const ws = new WebSocket(`ws://127.0.0.1:8000/ws?token=${WS_TOKEN}`);
+    const statusEl = document.getElementById("status");
+    const themeToggle = document.getElementById("themeToggle");
+    const tempMinEl = document.getElementById("tempMin");
+    const tempMaxEl = document.getElementById("tempMax");
+    const pressureMinEl = document.getElementById("pressureMin");
+    const pressureMaxEl = document.getElementById("pressureMax");
+    const vibrationMinEl = document.getElementById("vibrationMin");
+    const vibrationMaxEl = document.getElementById("vibrationMax");
+    const humidityValueEl = document.getElementById("humidityValue");
+    const voltageValueEl = document.getElementById("voltageValue");
+    const currentValueEl = document.getElementById("currentValue");
+    const statusValueEl = document.getElementById("statusValue");
+
+    // Theme management
+    const savedTheme = localStorage.getItem("theme") || "light";
+    document.documentElement.setAttribute("data-theme", savedTheme);
+    themeToggle.checked = savedTheme === "dark";
+
+    themeToggle.addEventListener("change", () => {
+      const newTheme = themeToggle.checked ? "dark" : "light";
+      document.documentElement.setAttribute("data-theme", newTheme);
+      localStorage.setItem("theme", newTheme);
+    });
+
+    function createChart(ctx, label, color) {
+      return new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            label,
+            data: [],
+            borderColor: color,
+            backgroundColor: color + '33',
+            tension: 0.4,
+            pointRadius: 3,
+            pointHoverRadius: 6,
+            borderWidth: 2
+          }]
+        },
+        options: {
+          animation: {
+            duration: 500,
+            easing: 'easeOutQuart'
+          },
+          scales: {
+            x: {
+              ticks: { color: "var(--text-secondary)", font: { size: 12 } },
+              grid: { display: false }
+            },
+            y: {
+              beginAtZero: true,
+              ticks: { color: "var(--text-secondary)", font: { size: 12 } },
+              grid: { color: "var(--grid-color)" }
+            }
+          },
+          plugins: {
+            legend: {
+              labels: { color: "var(--text-primary)", font: { size: 14, weight: '600' } }
+            },
+            tooltip: {
+              backgroundColor: 'var(--tooltip-bg)',
+              titleColor: '#fff',
+              bodyColor: '#fff',
+              borderColor: 'var(--grid-color)',
+              borderWidth: 1
+            }
+          },
+          responsive: true,
+          maintainAspectRatio: false
+        }
+      });
+    }
+
+    const temperatureChart = createChart(
+      document.getElementById("temperatureChart").getContext("2d"),
+      "Temperature (°C)", "#ff7043"
+    );
+    const pressureChart = createChart(
+      document.getElementById("pressureChart").getContext("2d"),
+      "Pressure (bar)", "#3b82f6"
+    );
+    const vibrationChart = createChart(
+      document.getElementById("vibrationChart").getContext("2d"),
+      "Vibration (g)", "#10b981"
+    );
+
+    function updateMetrics() {
+      tempMinEl.textContent = `Min: ${tempMin.toFixed(1)} °C`;
+      tempMaxEl.textContent = `Max: ${tempMax.toFixed(1)} °C`;
+      pressureMinEl.textContent = `Min: ${pressureMin.toFixed(1)} bar`;
+      pressureMaxEl.textContent = `Max: ${pressureMax.toFixed(1)} bar`;
+      vibrationMinEl.textContent = `Min: ${vibrationMin.toFixed(1)} g`;
+      vibrationMaxEl.textContent = `Max: ${vibrationMax.toFixed(1)} g`;
+    }
+
+    ws.onopen = () => {
+      statusEl.textContent = "🟢 Connected";
+      statusEl.classList.remove("error");
+      statusEl.classList.add("connected");
+      isConnected = true;
+    };
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      const timestamp = new Date().toLocaleTimeString();
+
+      if (labels.length >= MAX_POINTS) {
+        labels.shift();
+        tempData.shift();
+        pressureData.shift();
+        vibrationData.shift();
+      }
+
+      labels.push(timestamp);
+      tempData.push(data.temperature);
+      pressureData.push(data.pressure);
+      vibrationData.push(data.vibration);
+
+      // Update min/max
+      tempMin = Math.min(tempMin, data.temperature);
+      tempMax = Math.max(tempMax, data.temperature);
+      pressureMin = Math.min(pressureMin, data.pressure);
+      pressureMax = Math.max(pressureMax, data.pressure);
+      vibrationMin = Math.min(vibrationMin, data.vibration);
+      vibrationMax = Math.max(vibrationMax, data.vibration);
+
+      [temperatureChart, pressureChart, vibrationChart].forEach((chart, i) => {
+        chart.data.labels = labels;
+        chart.data.datasets[0].data = i === 0 ? tempData : i === 1 ? pressureData : vibrationData;
+        chart.update();
+      });
+
+      updateMetrics();
+      // Update new sensor values
+      humidityValueEl.textContent = `${data.humidity} %`;
+      voltageValueEl.textContent = `${data.voltage} V`;
+      currentValueEl.textContent = `${data.current} A`;
+      statusValueEl.textContent = data.status;
+    };
+
+    ws.onerror = (event) => {
+      statusEl.textContent = "❌ WebSocket Error";
+      statusEl.classList.remove("connected");
+      statusEl.classList.add("error");
+      isConnected = false;
+      updateMetrics();
+    };
+
+    ws.onclose = (event) => {
+      if (event.code === 1008) {
+        statusEl.textContent = "🔒 Unauthorized (token error)";
+      } else {
+        statusEl.textContent = "🔌 Disconnected";
+      }
+      statusEl.classList.remove("connected");
+      statusEl.classList.add("error");
+      isConnected = false;
+      updateMetrics();
+    };
+  </script>
+</body>
+</html>
