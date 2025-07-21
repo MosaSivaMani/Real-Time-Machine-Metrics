@@ -139,4 +139,7 @@ Feel free to fork the repo and submit a pull request.
 
 For support or queries, contact:
 **Mosa Siva** — `mosasiva6@gmail.com`
+**outputs**
+<img width="1822" height="962" alt="image" src="https://github.com/user-attachments/assets/722c98d7-bd91-4b6c-8a29-708f2a70c79a" />
+<img width="1790" height="958" alt="image" src="https://github.com/user-attachments/assets/04fbfdb0-8d6b-40eb-b962-e19092d94fc0" />
 
