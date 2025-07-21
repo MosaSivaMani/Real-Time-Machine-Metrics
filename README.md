@@ -6,6 +6,9 @@ A real-time dashboard for monitoring industrial machine metrics such as temperat
 > 🌐 Hosted on Streamlit Cloud  
 > 🔗 **Live App:** [Click to View](https://real-time-machine-metrics-jd9fzaqdo9f72wje4fbznn.streamlit.app/)
 
+
+<img width="1790" height="958" alt="image" src="https://github.com/user-attachments/assets/316a2232-4d90-4bff-b68e-4271506cf168" />
+
 ---
 
 ## 🚀 Project Features
