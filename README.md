@@ -135,5 +135,5 @@ Feel free to fork the repo and submit a pull request.
 ## 📧 Contact
 
 For support or queries, contact:
-**Mosa Siva** — `mosasiva6@example.com`
+**Mosa Siva** — `mosasiva6@gmail.com`
 
