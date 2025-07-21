@@ -2,6 +2,9 @@
 # 📊 Real-Time Machine Metrics Dashboard
 
 A real-time dashboard for monitoring industrial machine metrics such as temperature, vibration, speed, and power consumption. Designed to help factories improve operational efficiency, enable predictive maintenance, and minimize downtime.
+> 💻 Built using Python + Streamlit  
+> 🌐 Hosted on Streamlit Cloud  
+> 🔗 **Live App:** [Click to View](https://real-time-machine-metrics-jd9fzaqdo9f72wje4fbznn.streamlit.app/)
 
 ---
 
